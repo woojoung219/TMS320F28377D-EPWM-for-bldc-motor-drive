@@ -23,4 +23,29 @@ EPWM_setCounterCompareValue(myEPWM0_BASE, EPWM_COUNTER_COMPARE_A, 25000);// 타�
 DELAY_US(7000000);
 
 EPWM_setCounterCompareValue(myEPWM0_BASE, EPWM_COUNTER_COMPARE_A, 12500); //EPWM=12500/49999=125/500(us)
-DELAY_US(8000000);	
+DELAY_US(8000000);	 No newline at end of file
+
+--------------------------------------------------------------------------------------------------------------
+English ver.
+The OneShot ESC protocol for driving a BLDC motor has been implemented using EPWM.
+OneShot Protocol
+- Pulse frequency: 2 kHz (500 µs)
+- Pulse width: 125–250 µs
+
+Within the `EPWM_init()` function in `epwm_ex_bldc/board.c`:
+`EPWM_setClockPrescaler(myEPWM0_BASE, EPWM_CLOCK_DIVIDER_1, EPWM_HSCLOCK_DIVIDER_1);` // EPWMCLK = 100 MHz, TBCLK = EPWMCLK / (HSPCLKDIV * CLKDIV) = 100 MHz
+`EPWM_setTimeBasePeriod(myEPWM0_BASE, 49999);` // TPWM = (TBPRD + 1) * (100 MHz) = 2 kHz
+`EPWM_setTimeBaseCounter(myEPWM0_BASE, 0);`
+`EPWM_setTimeBaseCounterMode(myEPWM0_BASE, EPWM_COUNTER_MODE_UP);` // Count up
+`EPWM_disablePhaseShiftLoad(myEPWM0_BASE);` // Synchronization and phase-shift control disabled
+`EPWM_setPhaseShift(myEPWM0_BASE, 0);`
+`EPWM_setCounterCompareShadowLoadMode(myEPWM0_BASE, EPWM_COUNTER_COMPARE_A, EPWM_COMP_LOAD_ON_CNTR_ZERO);` // Configures the CMPA register to operate in shadow mode. // Configure the system so that when the CPU writes a value to CMPA, it is stored in a shadow register and only copied to the active CMPA register at a specified point (e.g., when TBCTR == 0). This ensures the active register is updated with the shadow register's value when the timer counter matches zero.
+EPWM_setActionQualifierAction(myEPWM0_BASE, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_HIGH, EPWM_AQ_OUTPUT_ON_TIMEBASE_ZERO); // Set the EPWMxA port to HIGH when the timer counter matches zero.
+EPWM_setActionQualifierAction(myEPWM0_BASE, EPWM_AQ_OUTPUT_A, EPWM_AQ_OUTPUT_LOW, EPWM_AQ_OUTPUT_ON_TIMEBASE_UP_CMPA);  // Set the EPWMxA port to LOW when the timer counter matches the CMPA value during the up-count phase; this generates the EPWM signal.
+
+Within the ESC_Calibration() function in epwm_ex_bldc/epwm_ex_bldc.c:
+EPWM_setCounterCompareValue(myEPWM0_BASE, EPWM_COUNTER_COMPARE_A, 25000); // Set to LOW when the timer matches the CMPA value during the up-count phase; EPWM = 25000/49999 = 250/500 (us).
+DELAY_US(7000000);
+
+EPWM_setCounterCompareValue(myEPWM0_BASE, EPWM_COUNTER_COMPARE_A, 12500); // EPWM = 12500/49999 = 125/500 (us).
+DELAY_US(8000000);
